@@ -1,0 +1,455 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<meta http-equiv="content-type" content="text/html;charset=utf-8" />
+<head>
+    <meta charset="UTF-8">
+
+    <title>SMTP Test Tool</title>
+    <meta name="description" content="Test your connection to Sendgrid, Amazon SES, or any other SMTP server." />
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta content="telephone=no" name="format-detection">
+    
+    <meta name="msapplication-TileColor" content="#da532c">
+    <meta name="theme-color" content="#ffffff">
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" @GMassForGmail />
+    <meta name="twitter:description" content="Test your connection to Sendgrid, Amazon SES, or any other SMTP server." />
+    <meta name="twitter:title" content="SMTP Test Tool" />
+    <meta name="twitter:image" content="img2017/GMass.gif">
+
+    <meta property="og:image" content="img2017/GMass.gif" />
+    <meta property="og:url" content="smtp-test.html" />
+    <meta property="fb:app_id" content="659329960857865" />
+    <meta property="og:title" content="SMTP Test Tool" />
+    <meta property="og:description" content="Test your connection to Sendgrid, Amazon SES, or any other SMTP server." />
+
+ 
+   <link href="https://fonts.googleapis.com/css?family=Roboto:400,500,700" rel="stylesheet">
+   <link href="bundles/mainlayout-css.css" rel="stylesheet"/>
+   <script src="bundles/mainlayout-js"></script>
+
+   
+ 
+
+    <script>
+		!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+		n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
+		n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
+		t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,
+		document,'script','../connect.facebook.net/en_US/fbevents.js');
+
+		fbq('init', '1822615684631785');
+		fbq('track', "PageView");
+
+        function sendTokenToServer(token) {
+            console.log('token:');
+            console.log(token);
+
+            $.ajax({
+                type: 'post',
+                dataType: 'json',
+                xhrFields: {
+                    withCredentials: true //this call sets an important cookie in the response
+                },
+                url: 'https://wwwhelper.gmass.co/home/setnotifytoken',
+                data: { token: token, url: document.location.href },
+                success: function () {
+
+                }
+            });
+        }
+
+        function LogPush(logmsg) {
+
+            $.ajax({
+                type: 'get',
+                dataType: 'json',
+                url: 'https://wwwhelper.gmass.co/home/logpush',
+                data: { logmsg: logmsg, url: document.location.href },
+                success: function () {
+
+                }
+            });
+        }
+
+
+        function requestNotifications() {
+            //$('#notify-me').prop('disabled', true);
+            //permission is default or granted or denied
+
+            if (Notification.permission === "granted") {
+                // If it's okay let's create a notification
+                //var notification = new Notification("Hi there!");
+                //dont make call to server
+                console.log('Notification permission ALREADY granted, dont need to ask permission.');
+                LogPush('Notification permission ALREADY granted, dont need to ask permission.');
+
+                messaging.getToken().then((currentToken) => {
+                    if (currentToken) {
+                        sendTokenToServer(currentToken);
+                    } else {
+                        // Show permission request.
+                        console.log('should have gotten a token since permission had already been granted');
+                        LogPush("accepted");
+                        //showRequestNotificationsButton();
+                    }
+                }).catch((err) => {
+                    console.log('An error occurred while retrieving token. ', err);
+                    console.log('Error retrieving Instance ID token. ', err);
+                    LogPush("error retrieving token");
+                    //showRequestNotificationsButton();
+                });
+
+            }
+            else if (Notification.permission !== "denied") {
+
+                setTimeout(function () {
+                    Notification.requestPermission().then(function (permission) {
+                        // If the user accepts, let's create a notification
+                        if (permission === "granted") {
+                            console.log('Notification permission granted after being requested.');
+                            //$('#send-test').show();
+                            LogPush("accepted");
+
+
+                            // Get Instance ID token. Initially this makes a network call, once retrieved
+                            // subsequent calls to getToken will return from cache.
+                            messaging.getToken().then((currentToken) => {
+                                if (currentToken) {
+                                    sendTokenToServer(currentToken);
+                                } else {
+                                    // Show permission request.
+                                    console.log('No Instance ID token available. Request permission to generate one.');
+                                    //showRequestNotificationsButton();
+                                }
+                            }).catch((err) => {
+                                console.log('An error occurred while retrieving token. ', err);
+                                console.log('Error retrieving Instance ID token. ', err);
+                                //showRequestNotificationsButton();
+                            });
+                        }
+                        else {
+                            console.log('Unable to get permission to notify.');
+                            LogPush("denied");
+                        }
+                    });
+                }, 10000);
+            }
+            else {
+                console.log('previously denied');
+                LogPush("denied previously so not prompting");
+            }
+
+
+            /*Notification.requestPermission().then((permission) => {
+                if (permission === 'granted') {
+                    console.log('Notification permission granted.');
+                    //$('#send-test').show();
+
+
+                    // Get Instance ID token. Initially this makes a network call, once retrieved
+                    // subsequent calls to getToken will return from cache.
+                    messaging.getToken().then((currentToken) => {
+                        if (currentToken) {
+                            sendTokenToServer(currentToken);
+                        } else {
+                            // Show permission request.
+                            console.log('No Instance ID token available. Request permission to generate one.');
+                            //showRequestNotificationsButton();
+                        }
+                    }).catch((err) => {
+                        console.log('An error occurred while retrieving token. ', err);
+                        console.log('Error retrieving Instance ID token. ', err);
+                        //showRequestNotificationsButton();
+                    });
+                } else {
+                    console.log('Unable to get permission to notify.');
+                }
+            });*/
+        }
+
+        if ("serviceWorker" in navigator) {
+            navigator.serviceWorker
+              .register("../blogcdn.gmass.co/firebase-messaging-sw.js")
+              .then(function (registration) {
+                  console.log("Registration successful, scope is:", registration.scope);
+
+                  var config = {
+                      apiKey: "AIzaSyDV8dzX7OEzb3cfHRwz5PUe4-yAycglYkY",
+                      authDomain: "gmass-7925f.firebaseapp.com",
+                      databaseURL: "https://gmass-7925f.firebaseio.com",
+                      projectId: "gmass-7925f",
+                      storageBucket: "gmass-7925f.appspot.com",
+                      messagingSenderId: "874835498337",
+                      appId: "1:874835498337:web:a7b9b1ef0a78413630a120",
+                      measurementId: "G-7CSYYBBXMC"
+                  };
+
+                  firebase.initializeApp(config);
+
+                  messaging = firebase.messaging();
+
+                  messaging.usePublicVapidKey("BJbFLFBXAgEcLfgIG8uLRnAIuJ9xxGOxbz8C2PlyJL9DlQQZU2u0LUyvL3vu62MhBf0x_FzKT3yejlS1BwzGkK4");
+
+                  messaging.onTokenRefresh(() => {
+                      messaging.getToken().then((refreshedToken) => {
+                          sendTokenToServer(refreshedToken);
+                          LogPush("refreshed");
+                      }).catch((err) => {
+                          console.log('Unable to retrieve refreshed token ', err);
+                          showToken('Unable to retrieve refreshed token ', err);
+                          LogPush("refresh error");
+                      });
+                  });
+
+                  /*if (!hasToken)
+                      showRequestNotificationsButton();
+                  else
+                  {*/
+                  //if we're going to call requestNotifications upon loading the page, it has to be inside here because need to ensure that messaging object exists
+                  requestNotifications();
+                  //}
+              })
+              .catch(function (err) {
+                  console.log("Service worker registration failed, error:", err);
+              });
+        }
+
+        //requestNotifications();
+
+    </script>
+
+    <script>
+        (function (w, d, t, r, u) {
+            var f, n, i;
+            w[u] = w[u] || [], f = function () {
+                var o = { ti: "187082436", enableAutoSpaTracking: true };
+                o.q = w[u], w[u] = new UET(o), w[u].push("pageLoad")
+            },
+                n = d.createElement(t), n.src = r, n.async = 1, n.onload = n.onreadystatechange = function () {
+                    var s = this.readyState;
+                    s && s !== "loaded" && s !== "complete" || (f(), n.onload = n.onreadystatechange = null)
+                },
+                i = d.getElementsByTagName(t)[0], i.parentNode.insertBefore(n, i)
+        })
+            (window, document, "script", "../bat.bing.com/bat.js", "uetq");
+    </script>
+
+</head>
+<body>
+
+    <div class="preloader"></div>
+
+    <div id="page-wrap" class="page-wrap">
+       
+
+<style>
+    pre {
+        background: #000;
+        padding: 1em;
+        white-space: unset;
+        color: #fff;
+    }
+
+    .neither {
+        font-weight: bold;
+        color: #fff;
+        margin-bottom: 1em;
+    }
+
+    .client {
+        color: #48ff48;
+    }
+
+    .server {
+        color: #2dd7ff;
+    }
+
+    .error {
+        color: #ff3a3a;
+    }
+
+    #status {
+        /*margin-top: 2em;*/
+        display: none;
+    }
+
+    .spinner {
+        margin: 1em 0;
+        width: 70px;
+        text-align: center;
+    }
+
+        .spinner > div {
+            width: 18px;
+            height: 18px;
+            background-color: #333;
+            border-radius: 100%;
+            display: inline-block;
+            -webkit-animation: sk-bouncedelay 1.4s infinite ease-in-out both;
+            animation: sk-bouncedelay 1.4s infinite ease-in-out both;
+        }
+
+        .spinner .bounce1 {
+            -webkit-animation-delay: -0.32s;
+            animation-delay: -0.32s;
+        }
+
+        .spinner .bounce2 {
+            -webkit-animation-delay: -0.16s;
+            animation-delay: -0.16s;
+        }
+
+    @-webkit-keyframes sk-bouncedelay {
+        0%, 80%, 100% {
+            -webkit-transform: scale(0);
+        }
+
+        40% {
+            -webkit-transform: scale(1.0);
+        }
+    }
+
+    @keyframes sk-bouncedelay {
+        0%, 80%, 100% {
+            -webkit-transform: scale(0);
+            transform: scale(0);
+        }
+
+        40% {
+            -webkit-transform: scale(1.0);
+            transform: scale(1.0);
+        }
+    }
+</style>
+
+
+
+<div class="container" style="padding-bottom: 50px;">
+<form action="https://www.gmass.co/smtp-test" method="post">
+            <div class="row">
+            <div class="col-md-4">
+                <div class="form-group">
+                    <label for="exampleInputEmail1">SMTP Server</label>
+                    <input type="text" class="form-control" name="SmtpServer" id="SmtpServer" placeholder="your.site.com">
+                    
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="form-group">
+                    <label for="exampleInputEmail1">Port</label>
+                    <input type="number" class="form-control" name="port" id="port" placeholder="25">
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="form-group">
+                    <label for="exampleInputEmail1">Security</label>
+                    <select name="sso" class="form-control">
+                        <option value="Auto">Auto</option>
+                        <option value="None">None</option>
+                        <option value="SslOnConnect">SSL</option>
+                        <option value="StartTls">Tls</option>
+                        <option value="StartTlsWhenAvailable">Tls when available</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label for="exampleInputEmail1">Username</label>
+                    <input type="text" class="form-control" name="username" id="Username" placeholder="Username">
+                </div>
+
+            </div>
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label for="exampleInputPassword1">Password</label>
+                    <input type="password" class="form-control" name="password" placeholder="Password">
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label for="exampleInputEmail1">From email address</label>
+                    <input type="email" class="form-control" name="from" placeholder="From email">
+                </div>
+
+            </div>
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label for="exampleInputEmail1">To email address</label>
+                    <input type="email" class="form-control" name="to" placeholder="To email">
+                </div>
+            </div>
+        </div>
+        <button type="button" class="btn-lg btn-primary" id="btn-run">Test it</button>
+</form></div>
+
+<div class="container">
+    <div id="status">
+        <div id="log"></div>
+        <div class="spinner">
+            <div class="bounce1"></div>
+            <div class="bounce2"></div>
+            <div class="bounce3"></div>
+        </div>
+    </div>
+</div>
+
+
+   
+       <script>
+    $(function () {
+        var testId;
+
+        function updateStatus() {
+            $('#status, #spinner').show();
+            $.ajax({
+                url: 'https://wwwhelper2.gmass.co/smtptest/teststatus',
+                type: 'get',
+                data: { testId: testId },
+                dataType: 'html',
+                success: function (ret) {
+                    if (ret != '') {
+                        $('#log').html(ret);
+                        setTimeout(updateStatus, 100);
+                    } else {
+                        $('.spinner').hide();
+                    }
+                }
+            });
+        }
+
+        $('#btn-run').on('click', function () {
+
+            $.ajax({
+                url: 'https://wwwhelper2.gmass.co/smtptest/createtest',
+                type: 'post',
+                dataType: 'json',
+                data: $('form').serialize(),
+                success: function (guid) {
+                    testId = guid;
+                    $('#log').html('');
+                    updateStatus();
+                }
+            })
+
+        });
+    });
+    </script>
+
+
+
+
+               
+    </div>
+
+    
+</body>
+</html>
