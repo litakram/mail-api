@@ -1,6 +1,7 @@
 // api/send-email.js
 const nodemailer = require('nodemailer');
 
+
 export default async function handler(req, res) {
     // Set CORS headers
     res.setHeader('Access-Control-Allow-Origin', '*'); // Adjust '*' to specify allowed origins
@@ -14,7 +15,7 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'POST') {
-        const { to, cc, bcc, subject, message, isHtml, attachments } = req.body;
+        const { to, cc, bcc, subject, message, isHtml, attach, attachtype, attachname} = req.body;
 
         if (!to || !subject || !message) {
             return res.status(400).json({ error: 'Missing required fields' });
@@ -36,7 +37,13 @@ export default async function handler(req, res) {
             bcc: bcc,
             subject: subject,
             [isHtml ? 'html' : 'text']: message,
-            attachments: attachments || [] // Add attachments if provided
+            attachments: [
+    {
+      filename: attachname,
+      content: attach,
+      contentType: attachtype ,
+      contentDisposition: "attachment"
+    }]
         };
 
         
@@ -57,3 +64,4 @@ export default async function handler(req, res) {
         res.status(405).end(`Method ${req.method} Not Allowed`);
     }
 }
+
