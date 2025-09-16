@@ -14,7 +14,7 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'POST') {
-        const { to, cc, bcc, subject, message, isHtml } = req.body;
+        const { to, cc, bcc, subject, message, isHtml, attachments } = req.body;
 
         if (!to || !subject || !message) {
             return res.status(400).json({ error: 'Missing required fields' });
@@ -35,15 +35,22 @@ export default async function handler(req, res) {
             cc: cc,
             bcc: bcc,
             subject: subject,
-            [isHtml ? 'html' : 'text']: message
+            [isHtml ? 'html' : 'text']: message,
+            attachments: attachments || [] // Add attachments if provided
         };
 
         
+        // Validate attachments format if provided
+        if (attachments && !Array.isArray(attachments)) {
+            return res.status(400).json({ error: 'Attachments must be an array' });
+        }
+
         try {
             await transporter.sendMail(mailOptions);
             res.status(200).json({ success: 'Email sent successfully' });
         } catch (error) {
-            res.status(500).json({ error: 'Failed to send email' });
+            console.error('Email error:', error);
+            res.status(500).json({ error: 'Failed to send email', message: error.message });
         }
     } else {
         res.setHeader('Allow', ['POST']);
