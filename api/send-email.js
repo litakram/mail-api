@@ -15,7 +15,7 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'POST') {
-        const { to, cc, bcc, subject, message, isHtml, attach, attachtype, attachname} = req.body;
+        const { to, cc, bcc, subject, message, isHtml } = req.body;
 
         if (!to || !subject || !message) {
             return res.status(400).json({ error: 'Missing required fields' });
@@ -31,26 +31,13 @@ export default async function handler(req, res) {
         });
         
         const mailOptions = {
-            from: 'akramlitniti4@gmail.com',
+            from: 'Profily <akramlitniti4@gmail.com>',
             to: to,
             cc: cc,
             bcc: bcc,
             subject: subject,
-            [isHtml ? 'html' : 'text']: message,
-            attachments: [
-    {
-      filename: attachname,
-      content: attach,
-      contentType: attachtype ,
-      contentDisposition: "attachment"
-    }]
+            [isHtml ? 'html' : 'text']: message
         };
-
-        
-        // Validate attachments format if provided
-        if (attach && !Array.isArray(attach)) {
-            return res.status(400).json({ error: 'Attachments must be an array' });
-        }
 
         try {
             await transporter.sendMail(mailOptions);
@@ -64,5 +51,3 @@ export default async function handler(req, res) {
         res.status(405).end(`Method ${req.method} Not Allowed`);
     }
 }
-
-
